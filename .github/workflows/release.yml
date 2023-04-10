@@ -1,0 +1,24 @@
+name: CD Pipeline
+run-name: ${{ github.actor }} is building a new version 🚀
+on:
+  push:
+    tags:
+      - 'v**'
+jobs:
+  build-release-version:
+    runs-on: ubuntu-latest
+    name: Build release version
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Build Changelog
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Create Release
+        uses: mikepenz/action-gh-release@v0.2.0-a03 #softprops/action-gh-release
+        with:
+          body: ${{steps.github_release.outputs.changelog}}
