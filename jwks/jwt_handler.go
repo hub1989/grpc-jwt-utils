@@ -81,19 +81,24 @@ func (j DefaultJwtAuthenticationService) AuthenticateFromContext(ctx context.Con
 }
 
 // GetSubAndRolesFromRequest get a user's sub and the claim to be used as roles
-// cognito uses something like "cognito:groups" while keycloak uses something like "roles"
+// cognito uses something like "cognito:groups" while keycloak uses something like "realm_access.roles"
+// if a claim matching the role name is not found, nil is returned as role strings
 func (j DefaultJwtAuthenticationService) GetSubAndRolesFromRequest(token *jwt.Token) (string, []string) {
 	claims := j.GetClaimsFromRequest(token)
 	sub := claims["sub"].(string)
 
-	roles := claims[j.RoleClaimName].([]interface{})
-	roleStrings := make([]string, len(roles))
+	roles, ok := claims[j.RoleClaimName].([]interface{})
+	if ok {
+		roleStrings := make([]string, len(roles))
 
-	for i, v := range roles {
-		roleStrings[i] = v.(string)
+		for i, v := range roles {
+			roleStrings[i] = v.(string)
+		}
+
+		return sub, roleStrings
 	}
 
-	return sub, roleStrings
+	return sub, nil
 }
 
 // HasRoleAccess checks if a list of roles contains a given role
