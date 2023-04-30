@@ -28,6 +28,7 @@ type Service interface {
 	AuthenticateFromContext(ctx context.Context) (*jwt.Token, error)
 	GetSubAndRolesFromRequest(token *jwt.Token) (string, []string)
 	AuthenticateForUser(ctx context.Context, userPid string, roleName string) error
+	AuthenticateForRole(ctx context.Context, roleName string) (*UserDetails, error)
 }
 
 type DefaultJwtAuthenticationService struct {
