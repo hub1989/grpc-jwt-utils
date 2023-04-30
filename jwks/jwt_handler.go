@@ -15,6 +15,12 @@ import (
 	"strings"
 )
 
+type UserDetails struct {
+	Token *jwt.Token
+	Roles []string
+	Sub   string
+}
+
 type Service interface {
 	GetKey(token *jwt.Token) (interface{}, error)
 	LoadUserInfoREST(ctx context.Context, token string) (interface{}, error)
@@ -129,6 +135,26 @@ func (j DefaultJwtAuthenticationService) AuthenticateForUser(ctx context.Context
 	}
 
 	return nil
+}
+
+func (j DefaultJwtAuthenticationService) AuthenticateForRole(ctx context.Context, roleName string) (*UserDetails, error) {
+	token, err := j.AuthenticateFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sub, roles := j.GetSubAndRolesFromRequest(token)
+	if !j.HasRoleAccess(roles, roleName) {
+		return nil, status.Error(codes.PermissionDenied, "you do not have the right permission for this operation")
+	}
+
+	details := UserDetails{
+		Token: token,
+		Roles: roles,
+		Sub:   sub,
+	}
+
+	return &details, nil
 }
 
 // LoadUserInfoREST load user information from a jwt token.
