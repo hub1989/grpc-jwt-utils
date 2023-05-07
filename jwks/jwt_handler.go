@@ -29,6 +29,7 @@ type Service interface {
 	GetSubAndRolesFromRequest(token *jwt.Token) (string, []string)
 	AuthenticateForUser(ctx context.Context, userPid string, roleName string) error
 	AuthenticateForRole(ctx context.Context, roleName string) (*UserDetails, error)
+	AuthenticateForRoles(ctx context.Context, roles ...string) (*UserDetails, error)
 }
 
 type DefaultJwtAuthenticationService struct {
@@ -156,6 +157,29 @@ func (j DefaultJwtAuthenticationService) AuthenticateForRole(ctx context.Context
 	}
 
 	return &details, nil
+}
+
+func (j DefaultJwtAuthenticationService) AuthenticateForRoles(ctx context.Context, roleNames ...string) (*UserDetails, error) {
+	token, err := j.AuthenticateFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sub, roles := j.GetSubAndRolesFromRequest(token)
+
+	for _, role := range roleNames {
+		if j.HasRoleAccess(roles, role) {
+			details := UserDetails{
+				Token: token,
+				Roles: roles,
+				Sub:   sub,
+			}
+
+			return &details, nil
+		}
+	}
+
+	return nil, status.Error(codes.PermissionDenied, "you do not have the right permission for this operation")
 }
 
 // LoadUserInfoREST load user information from a jwt token.
